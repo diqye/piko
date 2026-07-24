@@ -1,0 +1,15 @@
+<svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<mask id="pencilMask">
+			<rect x="0" y="0" width="90" height="90" fill="black" />
+			<rect x="35" y="20" width="30" height="18" rx="4" fill="white" />
+			<rect x="35" y="38" width="30" height="5" fill="white" />
+			<rect x="35" y="43" width="30" height="31" fill="white" />
+			<path d="M35 74 L65 74 L50 83 Z" fill="white" />
+			<path d="M46 79 L54 79 L50 87 Z" fill="white" />
+			<circle cx="35" cy="42" r="12" fill="white" />
+			<circle cx="65" cy="42" r="12" fill="white" />
+		</mask>
+	</defs>
+	<rect x="0" y="0" width="90" height="90" fill="#000" mask="url(#pencilMask)" />
+</svg>

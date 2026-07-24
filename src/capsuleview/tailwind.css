@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+html,
+body,
+#root {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	background: transparent;
+}
+
+body {
+	background: transparent;
+	font-family:
+		"PingFang SC", "Helvetica Neue", Inter, -apple-system, BlinkMacSystemFont,
+		"Segoe UI", Roboto, "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+.electrobun-webkit-app-region-drag {
+	outline: none;
+}
+
+.pencil-idle-float {
+	animation: pencil-float 3.2s ease-in-out infinite;
+}
+
+.pencil-idle-eyes {
+	animation: pencil-blink 4s ease-in-out infinite;
+	transform-origin: center;
+	transform-box: fill-box;
+}
+
+.pencil-thinking-scale {
+	transform: scale(0.55);
+	transform-origin: 50% 50%;
+	transform-box: fill-box;
+}
+
+.pencil-thinking-spin {
+	animation: pencil-thinking-spin 4s cubic-bezier(0.55, 0.05, 0.9, 0.3) infinite;
+	transform-box: fill-box;
+}
+
+.pencil-thinking-eyes {
+	transform: scale(0.7);
+	transform-origin: center;
+	transform-box: fill-box;
+}
+
+.pencil-working {
+	animation: pencil-working-wiggle 0.5s ease-in-out infinite;
+	transform-origin: 50% 100%;
+	transform-box: fill-box;
+}
+
+.pencil-working-scribble {
+	stroke-dasharray: 50 50;
+	animation: pencil-scribble 0.7s linear infinite;
+}
+
+.pencil-working-base {
+	animation: pencil-base-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pencil-float {
+	0%,
+	100% {
+		transform: translateY(0) rotate(-1deg);
+	}
+	50% {
+		transform: translateY(-1.5px) rotate(1deg);
+	}
+}
+
+@keyframes pencil-blink {
+	0%,
+	46%,
+	54%,
+	100% {
+		transform: scaleY(1);
+	}
+	50% {
+		transform: scaleY(0.08);
+	}
+}
+
+@keyframes pencil-thinking-spin {
+	0% {
+		transform: rotate(0deg);
+		transform-origin: 50% 70%;
+	}
+	25% {
+		transform: rotate(360deg);
+		transform-origin: 50% 60%;
+	}
+	50% {
+		transform: rotate(720deg);
+		transform-origin: 50% 50%;
+	}
+	75% {
+		transform: rotate(1080deg);
+		transform-origin: 50% 40%;
+	}
+	100% {
+		transform: rotate(1440deg);
+		transform-origin: 50% 30%;
+	}
+}
+
+@keyframes pencil-working-wiggle {
+	0% {
+		transform: translate(0, 0) rotate(0deg);
+	}
+	20% {
+		transform: translate(3px, -0.5px) rotate(2deg);
+	}
+	40% {
+		transform: translate(1px, 0.5px) rotate(0deg);
+	}
+	60% {
+		transform: translate(-3px, -0.5px) rotate(-2deg);
+	}
+	80% {
+		transform: translate(-1px, 0.5px) rotate(0deg);
+	}
+	100% {
+		transform: translate(0, 0) rotate(0deg);
+	}
+}
+
+@keyframes pencil-scribble {
+	0% {
+		stroke-dashoffset: 50;
+		opacity: 0.3;
+	}
+	50% {
+		opacity: 1;
+	}
+	100% {
+		stroke-dashoffset: 0;
+		opacity: 0.3;
+	}
+}
+
+@keyframes pencil-base-pulse {
+	0%,
+	100% {
+		opacity: 0.35;
+	}
+	50% {
+		opacity: 0.75;
+	}
+}

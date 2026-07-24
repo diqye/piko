@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About piko</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+        background: #fafafa;
+        color: #18181b;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+      }
+      .wrap { max-width: 520px; }
+      .logo {
+        width: 72px; height: 72px;
+        margin-bottom: 24px;
+      }
+      h1 {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 6px;
+      }
+      .version {
+        font-size: 13px;
+        color: #71717a;
+        margin-bottom: 36px;
+      }
+      section { margin-bottom: 32px; }
+      h2 {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #52525b;
+        margin-bottom: 12px;
+      }
+      p {
+        font-size: 14px;
+        line-height: 1.7;
+        color: #52525b;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        font-size: 14px;
+        line-height: 1.7;
+        color: #52525b;
+        padding-left: 16px;
+        position: relative;
+      }
+      li::before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: #fb923c;
+      }
+      a {
+        color: #fb923c;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      a:hover { text-decoration: underline; }
+      .divider {
+        height: 1px;
+        background: #e4e4e7;
+        margin: 32px 0;
+      }
+      .footer {
+        font-size: 12px;
+        color: #52525b;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <img class="logo" src="../assets/logo/logo.svg" alt="piko" />
+
+      <h1>piko</h1>
+      <p class="version" id="version"></p>
+
+      <section>
+        <h2>About</h2>
+        <p>
+          piko is a capsule built for pi code agent.
+          It shows agent status (idle / thinking / working) as a floating, always-on-top window.
+          Compatible with Claude Code.
+        </p>
+      </section>
+
+      <section>
+        <h2>Why</h2>
+        <ul>
+          <li>pi code agent runs in the terminal — you switch windows to check progress</li>
+          <li>Want a tiny floating window that tells you what the agent is doing at a glance</li>
+          <li>Minimal, fast, and quiet — never gets in the way of your main work</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Author</h2>
+        <p>
+          <a href="https://github.com/diqye/piko" id="me-link">@me</a>
+        </p>
+      </section>
+
+      <div class="divider"></div>
+    </div>
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

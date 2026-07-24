@@ -1,0 +1,25 @@
+{
+	"name": "piko",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"start": "electrobun dev",
+		"dev": "electrobun dev --watch",
+		"build:canary": "electrobun build --env=canary"
+	},
+	"dependencies": {
+		"bun-plugin-tailwind": "^0.1.2",
+		"electrobun": "1.18.1",
+		"lucide-react": "^1.24.0",
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7",
+		"wouter": "^3.10.0",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@types/react": "^19.2.17",
+		"@types/react-dom": "^19.2.3",
+		"tailwindcss": "^4.3.2"
+	}
+}
