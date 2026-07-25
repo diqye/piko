@@ -2,6 +2,9 @@
 
 A capsule for pi code agent — a floating, always-on-top window that shows agent status (idle / thinking / working) at a glance. Compatible with Claude Code.
 
+
+<img width="694" height="292" alt="image" src="https://github.com/user-attachments/assets/a2c8780b-3019-4748-b96a-17cd934a19d7" />
+
 ## Features
 
 - **Floating capsule**: a tiny window that stays on top, showing what your agent is doing right now
@@ -17,6 +20,10 @@ Measured on macOS arm64 (canary build):
 - **Runtime memory**: launcher 1.4 MB + bun main process 198 MB (≈ 199 MB total, includes WebKit)
 
 ## Installation
+
+[**Download
+ piko-canary.dmg**](https://github.com/diqye/piko/releases) —
+ from the latest release assets.
 
 > ⚠️ The canary DMG is **unsigned**. macOS Gatekeeper will block it on first open. You can clear the quarantine attribute with `xattr` to bypass it.
 
