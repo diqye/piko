@@ -37,6 +37,7 @@ export class CapsuleWindow {
 			frame,
 			titleBarStyle: "hidden",
 			transparent: true,
+			// passthrough: true,
 			styleMask: { Resizable: false },
 			hidden: true,
 			rpc: this.rpc,

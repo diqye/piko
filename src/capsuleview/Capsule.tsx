@@ -167,7 +167,7 @@ export default function Capsule() {
 
 	return (
 		<div className="electrobun-webkit-app-region-drag relative flex h-full w-full items-center justify-center select-none bg-transparent p-2">
-			<div className="relative w-full max-w-90">
+			<div className="relative w-full max-w-90 translate-y-2">
 				<div className="electrobun-webkit-app-region-no-drag absolute bottom-0 left-0 z-10">
 					<CapsuleStatusIcon event={eventForUpdate} />
 				</div>
