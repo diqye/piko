@@ -168,10 +168,10 @@ export default function Capsule() {
 	return (
 		<div className="electrobun-webkit-app-region-drag relative flex h-full w-full items-center justify-center bg-transparent p-2">
 			<div className="relative w-full max-w-70 translate-y-2">
-				<div className="absolute bottom-1 left-0 z-10">
+				<div className="absolute bottom-0 left-0 z-10">
 					<CapsuleStatusIcon event={eventForUpdate} />
 				</div>
-				<div className={`relative flex items-center overflow-hidden rounded-full border ${statusMeta.border} ${statusMeta.bg} pl-13 pr-3 py-2 text-zinc-100 transition-colors duration-300`}>
+				<div className={`relative flex items-center overflow-hidden rounded-full border ${statusMeta.border} ${statusMeta.bg} pl-13 pr-3 py-1 text-zinc-100 transition-colors duration-300`}>
 					<div className="relative min-w-0 flex-1">
 						<div className="flex items-center gap-2">
 							<span className="truncate text-sm font-semibold tracking-tight text-zinc-100">{eventForUpdate.name}</span>
