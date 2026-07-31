@@ -7,11 +7,11 @@ piko is a floating always-on-top window that shows agent status. It runs a Unix 
 ## Extension to write
 
 ```ts
-import type { ExtensionAPI, Model } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import http from "node:http";
 import path from "node:path";
 
-const SOCKET = "{{SOCKET}}";
+const SOCKET = "/Users/diqye/piko/piko.sock";
 
 function pikoUpdate(sessionId: string, event: {
   status: "idle" | "thinking" | "working";
@@ -37,27 +37,18 @@ function pikoUpdate(sessionId: string, event: {
   req.end();
 }
 
-function modelString(m: Model<any> | undefined): string | undefined {
-  return m ? m.id : undefined;
+function update(ctx: ExtensionContext, event: Parameters<typeof pikoUpdate>[1]) {
+  const model = ctx.model && `${ctx.model.id} . ${ctx.thinkingLevel}`;
+  pikoUpdate(ctx.sessionManager.getSessionId(), {
+    ...event,
+    name: ctx.sessionManager.getSessionName() ?? path.basename(ctx.cwd),
+    model,
+  });
 }
 
 export default function (pi: ExtensionAPI) {
-  let sessionId = "";
-  let name = "pi";
-  let currentModel: string | undefined;
-
-  pi.on("session_start", (_event, ctx) => {
-    sessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    name = path.basename(ctx.cwd);
-    currentModel = modelString(ctx.model);
-  });
-
-  pi.on("model_select", (event) => {
-    currentModel = modelString(event.model);
-  });
-
-  pi.on("before_agent_start", (event) => {
-    pikoUpdate(sessionId, { status: "thinking", name, model: currentModel, sample: event.prompt.slice(0, 200) });
+  pi.on("before_agent_start", (event, ctx) => {
+    update(ctx, { status: "thinking", name: "", sample: event.prompt.slice(0, 200) });
   });
 
   let buf = "";
@@ -66,28 +57,28 @@ export default function (pi: ExtensionAPI) {
     buf = "";
   });
 
-  pi.on("message_update", (event) => {
+  pi.on("message_update", (event, ctx) => {
     const e = event.assistantMessageEvent;
     if (!e) return;
     if (e.type === "thinking_delta" || e.type === "text_delta") {
       buf += e.delta;
       if (buf.length > 40) buf = e.delta;
       const status = e.type === "thinking_delta" ? "thinking" : "working";
-      pikoUpdate(sessionId, { status, name, model: currentModel, sample: buf });
+      update(ctx, { status, name: "", sample: buf });
     }
   });
 
-  pi.on("tool_call", (event) => {
+  pi.on("tool_call", (event, ctx) => {
     const sample = `${event.toolName}: ${summarize(event.input)}`;
-    pikoUpdate(sessionId, { status: "working", name, model: currentModel, sample });
+    update(ctx, { status: "working", name: "", sample });
   });
 
-  pi.on("agent_settled", () => {
-    pikoUpdate(sessionId, { status: "idle", name, model: currentModel });
+  pi.on("agent_settled", (_event, ctx) => {
+    update(ctx, { status: "idle", name: "" });
   });
 
-  pi.on("session_shutdown", () => {
-    pikoUpdate(sessionId, { status: "idle", name, model: currentModel });
+  pi.on("session_shutdown", (_event, ctx) => {
+    update(ctx, { status: "idle", name: "" });
   });
 }
 
