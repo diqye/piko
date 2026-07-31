@@ -56,7 +56,7 @@ function PencilMouth({ kind }: { kind: "smile" | "o" | "flat" }) {
 function CapsuleStatusIcon({ event }: { event: EventForUpdate }) {
 	if (event.status === "idle") {
 		return (
-			<svg viewBox="0 0 90 90" className="h-22 w-22" aria-hidden="true">
+			<svg viewBox="0 0 90 90" className="h-18 w-18" aria-hidden="true">
 				<g className="pencil-idle-float">
 					<PencilBody />
 					<PencilEraser />
@@ -71,7 +71,7 @@ function CapsuleStatusIcon({ event }: { event: EventForUpdate }) {
 
 	if (event.status === "thinking") {
 		return (
-			<svg viewBox="0 0 90 90" className="h-22 w-22 overflow-visible" aria-hidden="true">
+			<svg viewBox="0 0 90 90" className="h-18 w-18 overflow-visible" aria-hidden="true">
 				<g className="pencil-thinking-scale">
 					<g className="pencil-thinking-spin">
 						<PencilBody />
@@ -89,7 +89,7 @@ function CapsuleStatusIcon({ event }: { event: EventForUpdate }) {
 	if (event.status == "working") {
 
 		return (
-			<svg viewBox="0 0 90 90" className="h-22 w-22 overflow-visible" aria-hidden="true">
+			<svg viewBox="0 0 90 90" className="h-18 w-18 overflow-visible" aria-hidden="true">
 				<path
 					d="M28 82 Q32 79 36 82 Q40 85 44 82 Q48 79 52 82 Q56 85 60 82 Q64 79 68 82"
 					fill="none"
@@ -166,12 +166,12 @@ export default function Capsule() {
 	};
 
 	return (
-		<div className="electrobun-webkit-app-region-drag relative flex h-full w-full items-center justify-center select-none bg-transparent p-2">
-			<div className="relative w-full max-w-90 translate-y-2">
-				<div className="electrobun-webkit-app-region-no-drag absolute bottom-0 left-0 z-10">
+		<div className="electrobun-webkit-app-region-drag relative flex h-full w-full items-center justify-center bg-transparent p-2">
+			<div className="relative w-full max-w-70 translate-y-2">
+				<div className="absolute bottom-1 left-0 z-10">
 					<CapsuleStatusIcon event={eventForUpdate} />
 				</div>
-				<div className={`relative flex items-center overflow-hidden rounded-[28px] border ${statusMeta.border} ${statusMeta.bg} pl-18 pr-3 py-2 text-zinc-100 shadow-[0_6px_18px_rgba(0,0,0,0.28)] transition-colors duration-300`}>
+				<div className={`relative flex items-center overflow-hidden rounded-full border ${statusMeta.border} ${statusMeta.bg} pl-13 pr-3 py-2 text-zinc-100 transition-colors duration-300`}>
 					<div className="relative min-w-0 flex-1">
 						<div className="flex items-center gap-2">
 							<span className="truncate text-sm font-semibold tracking-tight text-zinc-100">{eventForUpdate.name}</span>
@@ -179,7 +179,7 @@ export default function Capsule() {
 								{labelByStatus[eventForUpdate.status]}
 							</span>
 						</div>
-						<div className={`truncate text-xs ${statusMeta.accent}`}>{eventForUpdate.status == "idle" ? "Ready for you" : eventForUpdate.sample}</div>
+						<div className={`truncate text-[10px] ${statusMeta.accent}`}>{eventForUpdate.status == "idle" ? "Ready for you" : eventForUpdate.sample}</div>
 					</div>
 					<div className="relative ml-3">
 						<button
@@ -194,7 +194,7 @@ export default function Capsule() {
 					</div>
 				</div>
 				<p className={`
-					absolute -top-9 right-4 rounded-full px-3 py-1.5 text-white
+					absolute -top-7.5 right-2 rounded-full px-3 py-1.5 text-white scale-75 origin-[right_center]
 					${statusMeta.bg} text-sm ${modelVisible ? "" : "hidden"}
 				`}>{eventForUpdate.model ?? "Ohooo"}</p>
 			</div>

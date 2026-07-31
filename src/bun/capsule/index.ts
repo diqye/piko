@@ -11,8 +11,8 @@ export class CapsuleWindow {
 	};
 
 	private constructor() {
-		const capsuleWidth = 400;
-		const capsuleHeight = 128;
+		const capsuleWidth = 264;
+		const capsuleHeight = 96;
 		const marginTop = 12;
 		const marginRight = 12;
 		const display = Screen.getPrimaryDisplay();
@@ -50,6 +50,8 @@ export class CapsuleWindow {
 		this.win.on("dom-ready", () => {
 			this.win.show();
 		});
+
+		
 	}
 
 	static fromDefault(): CapsuleWindow {
