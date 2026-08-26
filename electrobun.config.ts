@@ -1,11 +1,12 @@
 import type { ElectrobunConfig } from "electrobun";
 import tailwindPlugin from "bun-plugin-tailwind";
+import pkg from "./package.json";
 
 export default {
 	app: {
 		name: "Piko",
 		identifier: "www.dogdog.work",
-		version: "0.0.1",
+		version: pkg.version,
 	},
 	runtime: {
 		exitOnLastWindowClosed: false,
