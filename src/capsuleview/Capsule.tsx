@@ -96,14 +96,15 @@ function CapsuleStatusIcon({ event }: { event: EventForUpdate }) {
 				<path
 					d="M28 82 Q32 79 36 82 Q40 85 44 82 Q48 79 52 82 Q56 85 60 82 Q64 79 68 82"
 					fill="none"
-					stroke="#4ade80"
+					stroke="var(--piko-t3)"
 					strokeWidth="2"
 					strokeLinecap="round"
 					className="pencil-working-scribble"
 				/>
 				<path
 					d="M26 86 H70"
-					stroke="rgba(52,211,153,0.4)"
+					stroke="var(--piko-t3)"
+					opacity="0.4"
 					strokeWidth="1.6"
 					strokeLinecap="round"
 					strokeDasharray="3 4"
