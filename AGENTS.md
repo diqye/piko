@@ -1,5 +1,9 @@
 # Project Instructions
 
+# Verification
+
+- **不要自己跑 `bun run dev` 验证**：GUI 应用跑在用户桌面，agent 无法观察窗口/tray 实际效果。改动后只跑 `bunx tsc --noEmit` 保证类型正确，构建与交互验证交给用户自己完成（dev watch 常驻，用户自己看）
+
 # Coding Flow
 
 1. First, show the list of files to modify (describe the change, do not show modified code)
