@@ -5,7 +5,6 @@
 	"type": "module",
 	"scripts": {
 		"start": "electrobun dev",
-		"dev": "electrobun dev --watch",
 		"build:canary": "electrobun build --env=canary"
 	},
 	"dependencies": {

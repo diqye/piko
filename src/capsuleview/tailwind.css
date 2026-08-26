@@ -1,5 +1,88 @@
 @import "tailwindcss";
 
+/* ============================================================
+ * 主题 token — [data-theme] 挂在 <html> 上
+ * 每主题完整定义：
+ *   s1/s2/s3 = idle/thinking/working 胶囊底色(高不透明度，深浅区分状态)
+ *   t1/t2/t3 = 对应档位强调文字色(pill/小字)
+ *   ink      = 正文文字色
+ *   body     = 铅笔笔身色(SVG 主色，跟随主题)
+ *   暗底主题越活跃越亮，亮底主题越活跃越深，保证三档可区分
+ * ============================================================ */
+
+/* ---- 鲸跃蓝(默认):深蓝玻璃底 + 亮蓝强调 ---- */
+:root,
+[data-theme="blue"] {
+	--piko-ink: #e8eefc;
+	--piko-s1: rgb(23 37 71 / 0.94);
+	--piko-s2: rgb(29 52 100 / 0.95);
+	--piko-s3: rgb(37 70 132 / 0.96);
+	--piko-t1: #9db9e6;
+	--piko-t2: #7fb0f7;
+	--piko-t3: #a8c8ff;
+	--piko-body: #5b8dd9;
+}
+
+/* ---- 星眸黑:深空蓝灰 + 柔和紫 ---- */
+[data-theme="dark"] {
+	--piko-ink: #d6dbe8;
+	--piko-s1: rgb(38 43 56 / 0.94);
+	--piko-s2: rgb(48 54 72 / 0.95);
+	--piko-s3: rgb(62 69 94 / 0.96);
+	--piko-t1: #9aa3c4;
+	--piko-t2: #8b96e8;
+	--piko-t3: #aab4f2;
+	--piko-body: #7d89d4;
+}
+
+/* ---- 玉奁冰:青瓷釉色 + 温润青灰 ---- */
+[data-theme="celadon"] {
+	--piko-ink: #24352e;
+	--piko-s1: rgb(240 246 242 / 0.95);
+	--piko-s2: rgb(215 233 222 / 0.96);
+	--piko-s3: rgb(187 219 202 / 0.97);
+	--piko-t1: #58806f;
+	--piko-t2: #3f7a66;
+	--piko-t3: #2d6452;
+	--piko-body: #6fa894;
+}
+
+/* ---- 残烬红:暖炭灰底 + 降饱和珊瑚红 ---- */
+[data-theme="red"] {
+	--piko-ink: #ece4e0;
+	--piko-s1: rgb(44 39 36 / 0.95);
+	--piko-s2: rgb(60 46 42 / 0.96);
+	--piko-s3: rgb(78 54 48 / 0.97);
+	--piko-t1: #c9a49b;
+	--piko-t2: #dd8677;
+	--piko-t3: #f0a394;
+	--piko-body: #c96f5f;
+}
+
+/* ---- 齐王紫:深紫玻璃底 + 亮紫强调 ---- */
+[data-theme="qi"] {
+	--piko-ink: #ece8fb;
+	--piko-s1: rgb(35 27 59 / 0.94);
+	--piko-s2: rgb(48 38 82 / 0.95);
+	--piko-s3: rgb(64 50 108 / 0.96);
+	--piko-t1: #b9adf0;
+	--piko-t2: #c4b4f8;
+	--piko-t3: #d3c6fb;
+	--piko-body: #9a86e0;
+}
+
+/* ---- 凝脂白:羊脂暖白底 + 黛青强调 ---- */
+[data-theme="ningzhi"] {
+	--piko-ink: #33302a;
+	--piko-s1: rgb(250 249 247 / 0.95);
+	--piko-s2: rgb(233 237 244 / 0.96);
+	--piko-s3: rgb(213 221 235 / 0.97);
+	--piko-t1: #6d87ab;
+	--piko-t2: #4a6b96;
+	--piko-t3: #365070;
+	--piko-body: #5d7ba6;
+}
+
 html,
 body,
 #root {
@@ -20,6 +103,15 @@ body {
 .electrobun-webkit-app-region-drag {
 	outline: none;
 }
+
+/* 三档状态类：数字对应 idle/thinking/working，pill 只留文字+边框，不加背景块 */
+.piko-pill-1 { color: var(--piko-t1); border-color: color-mix(in srgb, var(--piko-t1) 45%, transparent); }
+.piko-pill-2 { color: var(--piko-t2); border-color: color-mix(in srgb, var(--piko-t2) 50%, transparent); }
+.piko-pill-3 { color: var(--piko-t3); border-color: color-mix(in srgb, var(--piko-t3) 60%, transparent); }
+.piko-bg-1 { background-color: var(--piko-s1); border-color: color-mix(in srgb, var(--piko-t1) 35%, transparent); }
+.piko-bg-2 { background-color: var(--piko-s2); border-color: color-mix(in srgb, var(--piko-t2) 45%, transparent); }
+.piko-bg-3 { background-color: var(--piko-s3); border-color: color-mix(in srgb, var(--piko-t3) 55%, transparent); }
+.piko-ink { color: var(--piko-ink); }
 
 .pencil-idle-float {
 	animation: pencil-float 3.2s ease-in-out infinite;

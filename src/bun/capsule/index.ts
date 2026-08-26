@@ -1,5 +1,6 @@
 import { BrowserView, BrowserWindow, Screen } from "electrobun";
 import type { CapsuleRPCSchema, EventForUpdate } from "../../shared/rpc-schema";
+import type { ThemeName } from "../../shared/themes";
 
 const SEND_INTERVAL = 150;
 const WATCHDOG_INTERVAL = 30_000;
@@ -11,6 +12,7 @@ export class CapsuleWindow {
 	private rpc: ReturnType<typeof BrowserView.defineRPC<CapsuleRPCSchema>>;
 	private visible = true;
 	private modelVisible = true;
+	private theme: ThemeName = "blue";
 	private lastEvent: EventForUpdate | null = null;
 	private lastSentAt = 0;
 	private flushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -71,6 +73,7 @@ export class CapsuleWindow {
 			// 新 webview 是白纸，最近事件和各开关状态要补发一遍
 			if (this.lastEvent) rpc.send.update(this.lastEvent);
 			rpc.send.toogleModel(this.modelVisible);
+			rpc.send.theme(this.theme);
 			if (this.visible) win.show();
 		});
 
@@ -131,6 +134,11 @@ export class CapsuleWindow {
 	toogleModel(visible: boolean) {
 		this.modelVisible = visible;
 		this.rpc.send.toogleModel(visible);
+	}
+
+	setTheme(theme: ThemeName) {
+		this.theme = theme;
+		this.rpc.send.theme(theme);
 	}
 
 	open() {

@@ -1,5 +1,6 @@
 import type { ElectrobunRPCSchema } from "electrobun";
 import z from "zod";
+import type { ThemeName } from "./themes";
 
 export const eventForUpdateSchema = z.union([
 	z.object({
@@ -38,7 +39,8 @@ export interface CapsuleRPCSchema extends ElectrobunRPCSchema {
 		};
 		messages: {
 			update: EventForUpdate,
-			toogleModel: boolean
+			toogleModel: boolean,
+			theme: ThemeName
 		};
 	};
 }

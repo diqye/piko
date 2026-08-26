@@ -1,8 +1,22 @@
 import { Screen, Utils } from "electrobun";
 import path from "node:path";
+import { THEMES, type ThemeName } from "../../shared/themes";
 
 export const configDir = path.join(Utils.paths.home, "piko");
 export const sockPath = path.join(configDir, "piko.sock");
+export const configPath = path.join(configDir, "config.json");
+
+export async function readTheme(): Promise<ThemeName> {
+	try {
+		const config = await Bun.file(configPath).json();
+		if (THEMES.some(t => t.id === config.theme)) return config.theme;
+	} catch { /* 无配置/损坏降级默认 */ }
+	return "blue";
+}
+
+export async function writeTheme(theme: ThemeName) {
+	await Bun.write(configPath, JSON.stringify({ theme }, null, "\t"));
+}
 
 /**
  * const [x,y] = centerInPrimary(600,600)

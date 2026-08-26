@@ -1,13 +1,15 @@
 import { Tray, Utils } from "electrobun";
 import { getIntegratePrompt } from "./prompts";
+import { THEMES, type ThemeName } from "../../shared/themes";
 
-type MenuAction = "show-capsule" | "show-model" | "clear-sessions" | "copy-prompt" | "about" | "quit";
+type MenuAction = "show-capsule" | "show-model" | "clear-sessions" | "copy-prompt" | "about" | "quit" | "theme";
 
 export class TrayMenu {
 	private static instance: TrayMenu | null = null;
 	private tray: Tray;
 	private capsuleVisible = true;
 	private modelVisible = true;
+	private theme: ThemeName = "blue";
 	
 	hook = {
 		showCapsule   : (               ) => {              },
@@ -15,6 +17,7 @@ export class TrayMenu {
 		clearSessions : (               ) => {              },
 		about         : (               ) => {              },
 		toogleModel   : (visible:boolean) => { void visible },
+		setTheme      : (theme:ThemeName) => { void theme   },
 	};
 
 	private constructor() {
@@ -28,7 +31,9 @@ export class TrayMenu {
 		this.refreshMenu();
 
 		this.tray.on("tray-clicked", (event) => {
-			const { action } = (event as { data: { action: MenuAction } }).data;
+			// event.data = { id: trayId, action, data?: 自定义 data }，菜单项的 data 在 data.data
+			const trayEvent = (event as { data: { action: MenuAction; data?: { id?: ThemeName } } }).data;
+			const { action } = trayEvent;
 			if (action === "show-capsule") {
 				if (this.capsuleVisible) {
 					this.setCapsuleVisible(false)
@@ -61,6 +66,13 @@ export class TrayMenu {
 				this.hook.toogleModel(this.modelVisible)
 				return;
 			}
+			if (action === "theme") {
+				const id = trayEvent.data?.id;
+				if (id == null) return;
+				this.setTheme(id);
+				this.hook.setTheme(id);
+				return;
+			}
 			action satisfies never;
 		});
 	}
@@ -70,6 +82,17 @@ export class TrayMenu {
 			{ type: "normal", label: "Show capsule", action: "show-capsule", checked: this.capsuleVisible },
 			{ type: "normal", label: "Show model", action: "show-model", checked: this.modelVisible },
 			{ type: "separator" },
+			{
+				type: "normal",
+				label: `Theme: ${THEMES.find(t => t.id === this.theme)?.label ?? ""}`,
+				submenu: THEMES.map(t => ({
+					type: "normal" as const,
+					label: t.label,
+					action: "theme",
+					data: { id: t.id },
+					checked: t.id === this.theme,
+				})),
+			},
 			{ type: "normal", label: "Clear sessions", action: "clear-sessions" },
 			{ type: "separator" },
 			{ type: "normal", label: "Copy integration prompt", action: "copy-prompt" },
@@ -81,6 +104,11 @@ export class TrayMenu {
 
 	setCapsuleVisible(visible: boolean) {
 		this.capsuleVisible = visible;
+		this.refreshMenu();
+	}
+
+	setTheme(theme: ThemeName) {
+		this.theme = theme;
 		this.refreshMenu();
 	}
 

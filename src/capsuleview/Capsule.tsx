@@ -2,7 +2,6 @@ import { Electroview } from "electrobun/view";
 import { Minus } from "lucide-react";
 import type { CapsuleRPCSchema, EventForUpdate } from "../shared/rpc-schema";
 import { useEffect, useState } from "react";
-
 const rpc = Electroview.defineRPC<CapsuleRPCSchema>({
 	handlers: {
 		requests: {
@@ -22,7 +21,7 @@ function PencilBody() {
 			<rect x="38" y="28" width="14" height="5" fill="#a1a1aa" stroke="#27272a" strokeWidth="1.5" />
 			<line x1="42" y1="28" x2="42" y2="33" stroke="#71717a" strokeWidth="0.9" />
 			<line x1="47" y1="28" x2="47" y2="33" stroke="#71717a" strokeWidth="0.9" />
-			<rect x="38" y="33" width="14" height="33" fill="#fb923c" stroke="#27272a" strokeWidth="1.5" />
+			<rect x="38" y="33" width="14" height="33" fill="var(--piko-body)" stroke="#27272a" strokeWidth="1.5" />
 			<rect x="40" y="33" width="3" height="33" fill="rgba(255,255,255,0.3)" />
 			<path d="M38 66 L52 66 L45 75 Z" fill="#fed7aa" stroke="#27272a" strokeWidth="1.5" strokeLinejoin="round" />
 			<path d="M43 71 L47 71 L45 79 Z" fill="#27272a" />
@@ -44,7 +43,7 @@ function PencilEyes({ dx = 0, dy = 0 }: { dx?: number; dy?: number }) {
 }
 
 function PencilEraser() {
-	return <rect x="38" y="4" width="14" height="16" rx="4" fill="#fb7185" stroke="#27272a" strokeWidth="1.5" />;
+	return <rect x="38" y="4" width="14" height="16" rx="4" fill="var(--piko-body)" stroke="#27272a" strokeWidth="1.5" opacity="0.75" />;
 }
 
 function PencilMouth({ kind }: { kind: "smile" | "o" | "flat" }) {
@@ -142,28 +141,29 @@ export default function Capsule() {
 		rpc.addMessageListener("toogleModel",visible=>{
 			setModelVisible(visible)
 		})
+		rpc.addMessageListener("theme",theme=>{
+			document.documentElement.dataset.theme = theme
+		})
 	},[])
 
 	const statusMeta = {
 		idle: {
-			accent: "text-orange-200/80",
-			pill: "border-orange-300/25 bg-orange-300/8 text-orange-200",
-			bg: "bg-orange-950/75",
-			border: "border-orange-300/20",
+			text: "piko-pill-1",
+			pill: "piko-pill-1",
+			bg: "piko-bg-1",
 		},
 		thinking: {
-			accent: "text-orange-300",
-			pill: "border-orange-500/30 bg-orange-500/12 text-orange-300",
-			bg: "bg-orange-900/75",
-			border: "border-orange-500/30",
+			text: "piko-pill-2",
+			pill: "piko-pill-2",
+			bg: "piko-bg-2",
 		},
 		working: {
-			accent: "text-orange-400",
-			pill: "border-orange-700/40 bg-orange-700/15 text-orange-400",
-			bg: "bg-orange-800/75",
-			border: "border-orange-600/40",
+			text: "piko-pill-3",
+			pill: "piko-pill-3",
+			bg: "piko-bg-3",
 		},
 	}[eventForUpdate.status];
+	// 小字只需要文字色，去掉 piko-pill 的边框
 
 	const hide = () => {
 		rpc.send.hide();
@@ -175,15 +175,15 @@ export default function Capsule() {
 				<div className="absolute bottom-0 left-0 z-10">
 					<CapsuleStatusIcon event={eventForUpdate} />
 				</div>
-				<div className={`relative flex items-center overflow-hidden rounded-full border ${statusMeta.border} ${statusMeta.bg} pl-13 pr-3 py-1 text-zinc-100 transition-colors duration-300`}>
+				<div className={`relative flex items-center overflow-hidden rounded-full border pl-13 pr-3 py-1 transition-colors duration-300 ${statusMeta.bg}`}>
 					<div className="relative min-w-0 flex-1">
 						<div className="flex items-center gap-2">
-							<span className="truncate text-sm font-semibold tracking-tight text-zinc-100">{eventForUpdate.name}</span>
+							<span className="piko-ink truncate text-sm font-semibold tracking-tight">{eventForUpdate.name}</span>
 							<span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] ${statusMeta.pill}`}>
 								{labelByStatus[eventForUpdate.status]}
 							</span>
 						</div>
-						<div className={`truncate text-[10px] ${statusMeta.accent}`}>{eventForUpdate.status == "idle" ? "Ready for you" : eventForUpdate.sample}</div>
+						<div className={`${statusMeta.text} truncate text-[10px]`}>{eventForUpdate.status == "idle" ? "Ready for you" : eventForUpdate.sample}</div>
 					</div>
 					<div className="relative ml-3">
 						<button
@@ -198,8 +198,8 @@ export default function Capsule() {
 					</div>
 				</div>
 				<p className={`
-					absolute -top-7.5 right-2 rounded-full px-3 py-1.5 text-white scale-75 origin-[right_center]
-					${statusMeta.bg} text-sm ${modelVisible ? "" : "hidden"}
+					absolute -top-7.5 right-2 rounded-full px-3 py-1.5 scale-75 origin-[right_center]
+					piko-ink text-sm ${statusMeta.bg} ${modelVisible ? "" : "hidden"}
 				`}>{eventForUpdate.model ?? "Ohooo"}</p>
 			</div>
 		</div>

@@ -1,5 +1,6 @@
 import { showAbout } from "./about";
 import { CapsuleWindow } from "./capsule";
+import { readTheme, writeTheme } from "./kit/kit";
 import { setupApplicationMenu } from "./menu";
 import { runServer } from "./server";
 import { TrayMenu } from "./tray";
@@ -7,6 +8,9 @@ import { TrayMenu } from "./tray";
 async function bootstrap() {
 	const capsule = CapsuleWindow.fromDefault();
 	const tray = TrayMenu.fromDefault();
+	const theme = await readTheme();
+	capsule.setTheme(theme);
+	tray.setTheme(theme);
 
 	capsule.hook.hide = () => {
 		capsule.hide();
@@ -21,6 +25,10 @@ async function bootstrap() {
 	tray.hook.about = showAbout;
     tray.hook.toogleModel = visible => {
         capsule.toogleModel(visible)
+    }
+    tray.hook.setTheme = theme => {
+        capsule.setTheme(theme)
+        writeTheme(theme)
     }
 	capsule.open();
 	const server = await runServer(event => {
