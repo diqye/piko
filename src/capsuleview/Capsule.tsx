@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 
 const rpc = Electroview.defineRPC<CapsuleRPCSchema>({
 	handlers: {
+		requests: {
+			// bun 侧 watchdog 探活用，无实际逻辑
+			ping: () => {},
+		},
 	},
 });
 

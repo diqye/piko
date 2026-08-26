@@ -33,7 +33,9 @@ export interface CapsuleRPCSchema extends ElectrobunRPCSchema {
 		};
 	};
 	webview: {
-		requests: {};
+		requests: {
+			ping: { params: void; response: void };
+		};
 		messages: {
 			update: EventForUpdate,
 			toogleModel: boolean
