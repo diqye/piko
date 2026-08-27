@@ -1,7 +1,8 @@
 import { Electroview } from "electrobun/view";
 import { Minus } from "lucide-react";
 import type { CapsuleRPCSchema, EventForUpdate } from "../shared/rpc-schema";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createFlame, refreshFlamePalette, type Flame, type FlameMode } from "./flame";
 const rpc = Electroview.defineRPC<CapsuleRPCSchema>({
 	handlers: {
 		requests: {
@@ -144,27 +145,35 @@ export default function Capsule() {
 		})
 		rpc.addMessageListener("theme",theme=>{
 			document.documentElement.dataset.theme = theme
+			// dataset 赋值是同步生效的，可以立刻重读色板
+			refreshFlamePalette()
 		})
 	},[])
 
-	const statusMeta = {
-		idle: {
-			text: "piko-pill-1",
-			pill: "piko-pill-1",
-			bg: "piko-bg-1",
-		},
-		thinking: {
-			text: "piko-pill-2",
-			pill: "piko-pill-2",
-			bg: "piko-bg-2",
-		},
-		working: {
-			text: "piko-pill-3",
-			pill: "piko-pill-3",
-			bg: "piko-bg-3",
-		},
-	}[eventForUpdate.status];
-	// 小字只需要文字色，去掉 piko-pill 的边框
+	// 火焰状态机：idle=熄火、thinking=顶边小火、working=全轮廓旺火
+	// 状态映射进 useEffect 依赖，状态变化只调 setMode，引擎自己处理过渡
+	const pillRef = useRef<HTMLDivElement>(null);
+	const backCanvasRef = useRef<HTMLCanvasElement>(null);
+	const frontCanvasRef = useRef<HTMLCanvasElement>(null);
+	const flamesRef = useRef<Flame[]>([]);
+	useEffect(() => {
+		const pill = pillRef.current;
+		const back = backCanvasRef.current;
+		const front = frontCanvasRef.current;
+		if (!pill || !back || !front) return;
+		refreshFlamePalette();
+		const rect = pill.getBoundingClientRect();
+		flamesRef.current = [createFlame(back, rect, "back"), createFlame(front, rect, "front")];
+		return () => {
+			for (const f of flamesRef.current) f.destroy();
+			flamesRef.current = [];
+		};
+	}, [])
+	useEffect(() => {
+		const flameMode: FlameMode =
+			eventForUpdate.status === "working" ? "full" : eventForUpdate.status === "thinking" ? "bottom" : "off";
+		for (const f of flamesRef.current) f.setMode(flameMode);
+	}, [eventForUpdate.status])
 
 	const hide = () => {
 		rpc.send.hide();
@@ -172,19 +181,21 @@ export default function Capsule() {
 
 	return (
 		<div className="electrobun-webkit-app-region-drag relative flex h-full w-full items-center justify-center bg-transparent p-2">
-			<div className="relative w-full max-w-70 translate-y-2">
+			<canvas ref={backCanvasRef} className="pointer-events-none absolute inset-0 z-[1] h-full w-full" />
+			<canvas ref={frontCanvasRef} className="pointer-events-none absolute inset-0 z-[4] h-full w-full" />
+			<div className="relative z-[3] w-full max-w-70 translate-y-2">
 				<div className="absolute bottom-0 left-0 z-10">
 					<CapsuleStatusIcon event={eventForUpdate} />
 				</div>
-				<div className={`relative flex items-center overflow-hidden rounded-full border pl-13 pr-3 py-1 transition-colors duration-300 ${statusMeta.bg}`}>
+				<div ref={pillRef} className={`relative flex items-center overflow-hidden rounded-full border pl-13 pr-3 py-1 transition-colors duration-300 piko-bg`}>
 					<div className="relative min-w-0 flex-1">
 						<div className="flex items-center gap-2">
 							<span className="piko-ink truncate text-sm font-semibold tracking-tight">{eventForUpdate.name}</span>
-							<span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] ${statusMeta.pill}`}>
+							<span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] piko-pill`}>
 								{labelByStatus[eventForUpdate.status]}
 							</span>
 						</div>
-						<div className={`${statusMeta.text} truncate text-[10px]`}>{eventForUpdate.status == "idle" ? "Ready for you" : eventForUpdate.sample}</div>
+						<div className={`piko-pill truncate text-[10px]`}>{eventForUpdate.status == "idle" ? "Ready for you" : eventForUpdate.sample}</div>
 					</div>
 					<div className="relative ml-3">
 						<button
@@ -200,7 +211,7 @@ export default function Capsule() {
 				</div>
 				<p className={`
 					absolute -top-7.5 right-2 rounded-full px-3 py-1.5 scale-75 origin-[right_center]
-					piko-ink text-sm ${statusMeta.bg} ${modelVisible ? "" : "hidden"}
+					piko-ink text-sm piko-bg ${modelVisible ? "" : "hidden"}
 				`}>{eventForUpdate.model ?? "Ohooo"}</p>
 			</div>
 		</div>
