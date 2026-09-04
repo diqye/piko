@@ -10,11 +10,12 @@ type LayerConfig = {
 };
 
 const LAYER_CONFIG: Record<FlameLayer, LayerConfig> = {
-	// 后层：大而亮，被胶囊遮住下半，读作轮廓后面的火；
-	// alpha 压低：lighter 加色叠加下重叠粒子亮度相加，高了会饱和发白
-	back: { rate: 90, sizeMin: 9, sizeMax: 15, alpha: 0.34 },
-	// 前层：小而淡，偶尔飘过胶囊表面，制造纵深
-	front: { rate: 45, sizeMin: 5, sizeMax: 9, alpha: 0.22 },
+	// 后层：被胶囊遮住下半，读作轮廓后面的火；
+	// 粒子必须小：光晕叠光晕只会更糊，雾气感来自大而软的光斑；
+	// 密集小亮核叠在一起才读作「实体火焰」
+	back: { rate: 260, sizeMin: 5, sizeMax: 9, alpha: 0.36 },
+	// 前层：叠在不透明胶囊底上，黑底发光感的加色优势没了，靠亮度和密度撑住对比
+	front: { rate: 160, sizeMin: 5, sizeMax: 8, alpha: 0.46 },
 };
 
 // 焰色梯度：随寿命推进白热核→暗尾的 5 档。
@@ -23,6 +24,8 @@ const FLAME_VARS = ["--piko-flame-1", "--piko-flame-2", "--piko-flame-3", "--pik
 
 const SPRITE_SIZE = 64;
 let spriteCache: HTMLCanvasElement[] | null = null;
+// 浅底主题（ningzhi/celadon）：白底上加色只会更白，front 层降级为正常覆盖
+let lightBackground = false;
 
 function parseColor(css: string): [number, number, number] | null {
 	const m = css.match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
@@ -37,10 +40,11 @@ function parseColor(css: string): [number, number, number] | null {
 	return null;
 }
 
-// 单色 ramp：白热核→亮→本色→暗尾，保底也保证「火焰 = working 强调色」的语义
+// 单色 ramp：亮火心→本色→暗尾。前档只混入少量白：
+// 白热靠叠加层数堆，单粒子太白叠两层就饱和成纯白
 function deriveRamp(t3: string): string[] {
 	const c = parseColor(t3);
-	if (!c) return ["#fff8eb", "#ffe082", "#ffa640", "#e86026", "#882c1a"];
+	if (!c) return ["#ffc179", "#ffb157", "#ffa640", "#e86026", "#882c1a"];
 	const mix = (ratio: number, withWhite: boolean): string => {
 		const t = withWhite ? 255 : 17;
 		const [r, g, b] = c;
@@ -50,7 +54,7 @@ function deriveRamp(t3: string): string[] {
 				[t - r, (t - g) * 0.9, (t - b) * 0.8];
 		return `rgb(${Math.round(r + d[0] * ratio)} ${Math.round(g + d[1] * ratio)} ${Math.round(b + d[2] * ratio)})`;
 	};
-	return [mix(0.85, true), mix(0.45, true), `rgb(${c[0]} ${c[1]} ${c[2]})`, mix(0.35, false), mix(0.55, false)];
+	return [mix(0.35, true), mix(0.15, true), `rgb(${c[0]} ${c[1]} ${c[2]})`, mix(0.35, false), mix(0.55, false)];
 }
 
 // 主题切换时调用：读 CSS 变量重建 sprite；5 个 token 任一缺失则走派生 ramp
@@ -61,6 +65,9 @@ export function refreshFlamePalette() {
 		? (tokens as unknown as string[])
 		: deriveRamp(style.getPropertyValue("--piko-t3").trim() || "#ffa640");
 	spriteCache = buildSprites(base.map((s) => parseColor(s) ?? [255, 166, 64]));
+	// 顺带判断胶囊底色深浅：相对亮度 > 0.6 视为浅底，决定 front 层混合模式
+	const s3 = parseColor(style.getPropertyValue("--piko-s3").trim());
+	lightBackground = !!s3 && (0.299 * s3[0] + 0.587 * s3[1] + 0.114 * s3[2]) / 255 > 0.6;
 }
 
 // 每帧画径向渐变太贵，颜色档位固定，预渲染成 sprite 后 drawImage
@@ -73,7 +80,7 @@ function buildSprites(colors: [number, number, number][]): HTMLCanvasElement[] {
 		const half = SPRITE_SIZE / 2;
 		const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
 		grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
-		grad.addColorStop(0.45, `rgba(${r},${g},${b},0.55)`);
+		grad.addColorStop(0.3, `rgba(${r},${g},${b},0.5)`);
 		grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
 		ctx.fillStyle = grad;
 		ctx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
@@ -200,8 +207,6 @@ export function createFlame(
 	canvas.width = Math.round(canvas.clientWidth * dpr);
 	canvas.height = Math.round(canvas.clientHeight * dpr);
 	ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-	// lighter 加色叠加是火焰发光感的来源
-	ctx.globalCompositeOperation = "lighter";
 
 	const spawn = () => {
 		if (particles.length >= MAX_PARTICLES) return;
@@ -212,14 +217,16 @@ export function createFlame(
 			if (mode !== "bottom" || cand.ny > 0.2) pt = cand;
 		}
 		pt ??= sampleOutline(outline, Math.random());
+		// 出生先顶出轮廓 2px 起步：火根贴边但压在轮廓外，不被不透明胶囊遮住
 		const outward = 4 + Math.random() * 8;
 		const p = freelist.pop() ?? ({} as Particle);
-		p.x = pt.x + pt.nx * Math.random() * 2;
-		p.y = pt.y + pt.ny * Math.random() * 2;
+		p.x = pt.x + pt.nx * (2 + Math.random() * 4);
+		p.y = pt.y + pt.ny * (2 + Math.random() * 4);
 		// 底边法线朝下无意义，钳为 0，统一向上烧
 		p.vx = pt.nx * outward + (Math.random() - 0.5) * 10;
-		p.vy = Math.min(0, pt.ny * outward) - (16 + Math.random() * 20);
-		p.maxLife = 0.5 + Math.random() * 0.35;
+		p.vy = Math.min(0, pt.ny * outward) - (13 + Math.random() * 15);
+		// 寿命缩短 + 发射率提高：粒子总数基本持平，但堆在火根，密度观感翻倍
+		p.maxLife = 0.36 + Math.random() * 0.26;
 		p.life = p.maxLife;
 		p.size = (cfg.sizeMin + Math.random() * (cfg.sizeMax - cfg.sizeMin)) * intensityScale;
 		p.phase = Math.random() * Math.PI * 2;
@@ -241,6 +248,10 @@ export function createFlame(
 			if (mode !== "off") spawn();
 		}
 
+		// 每帧设模式：主题切换即时生效，无需重建 flame；
+		// lighter 加色是深底发光感的来源，浅底上退化成白看不见，改正常覆盖
+		ctx.globalCompositeOperation = layer === "front" && lightBackground ? "source-over" : "lighter";
+
 		ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
 		for (let i = particles.length - 1; i >= 0; i--) {
@@ -261,10 +272,13 @@ export function createFlame(
 			const age01 = 1 - p.life / p.maxLife;
 			const idx = Math.min(FLAME_VARS.length - 1, Math.floor(age01 * FLAME_VARS.length));
 			// 火舌随寿命收缩 + 纵向拉伸，出生快速淡入、死亡线性淡出
-			const h = p.size * (0.55 + 0.85 * (p.life / p.maxLife));
+			const h = p.size * (0.5 + 1.0 * (p.life / p.maxLife));
 			const dw = h * 0.95;
-			const dh = h * 1.4;
-			ctx.globalAlpha = cfg.alpha * Math.min(1, Math.sqrt(intensityScale)) * Math.min(1, age01 * 10) * (p.life / p.maxLife);
+			const dh = h * 1.8;
+			// 幂次衰减替代线性：火根（寿命前期）保持高亮，火梢快速熄灭，根浓梢淡
+			// 指数只到 1.2：再高平均亮度掉太快，火焰会整体变暗
+			const fade = (p.life / p.maxLife) ** 1.2;
+			ctx.globalAlpha = cfg.alpha * Math.min(1, Math.sqrt(intensityScale)) * Math.min(1, age01 * 10) * fade;
 			ctx.drawImage(sprites()![idx]!, p.x - dw / 2, p.y - dh / 2, dw, dh);
 		}
 		ctx.globalAlpha = 1;

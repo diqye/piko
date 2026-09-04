@@ -17,9 +17,9 @@
 	--piko-s3: rgb(37 70 132);
 	--piko-t3: #a8c8ff;
 	--piko-body: #5b8dd9;
-	/* 乙炔焰：白炽→天蓝→钴蓝→深蓝→暗蓝 */
-	--piko-flame-1: #f2f8ff;
-	--piko-flame-2: #bfe0ff;
+	/* 乙炔焰：白炽→天蓝→钴蓝→深蓝→暗蓝；前档带足蓝相，白亮交给叠加堆 */
+	--piko-flame-1: #b8d8ff;
+	--piko-flame-2: #8fc2ff;
 	--piko-flame-3: #6aa8ff;
 	--piko-flame-4: #2d5fd8;
 	--piko-flame-5: #14265e;
@@ -50,8 +50,8 @@
 	--piko-t3: #f0a394;
 	--piko-body: #c96f5f;
 	/* 经典火：白热→金黄→橙红→绯红→炭火 */
-	--piko-flame-1: #fff5e8;
-	--piko-flame-2: #ffd98c;
+	--piko-flame-1: #ffe3b3;
+	--piko-flame-2: #ffc264;
 	--piko-flame-3: #ff9640;
 	--piko-flame-4: #e85028;
 	--piko-flame-5: #7a2412;
@@ -64,8 +64,8 @@
 	--piko-t3: #d3c6fb;
 	--piko-body: #9a86e0;
 	/* 电石焰：白炽→莱紫→深紫→酱紫→暗紫 */
-	--piko-flame-1: #f5f0ff;
-	--piko-flame-2: #d3b8ff;
+	--piko-flame-1: #d8c8ff;
+	--piko-flame-2: #b292ff;
 	--piko-flame-3: #9a6cf0;
 	--piko-flame-4: #5d2ea8;
 	--piko-flame-5: #2e1652;
@@ -78,6 +78,12 @@
 	--piko-s3: rgb(250 249 247);
 	--piko-t3: #365070;
 	--piko-body: #5d7ba6;
+	/* 烊烛焰：白热核→琥珀→橙红→绯红→炭，与黛青强调拉开对比 */
+	--piko-flame-1: #fff3e0;
+	--piko-flame-2: #ffd08a;
+	--piko-flame-3: #ff9a3d;
+	--piko-flame-4: #e85820;
+	--piko-flame-5: #8c2f12;
 }
 
 html,
