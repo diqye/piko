@@ -191,7 +191,7 @@ export default function Capsule() {
 					<div className="relative min-w-0 flex-1">
 						<div className="flex items-center gap-2">
 							<span className="piko-ink truncate text-sm font-semibold tracking-tight">{eventForUpdate.name}</span>
-							<span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] piko-pill`}>
+							<span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase piko-pill`}>
 								{labelByStatus[eventForUpdate.status]}
 							</span>
 						</div>
