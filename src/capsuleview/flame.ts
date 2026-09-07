@@ -10,12 +10,9 @@ type LayerConfig = {
 };
 
 const LAYER_CONFIG: Record<FlameLayer, LayerConfig> = {
-	// 后层：被胶囊遮住下半，读作轮廓后面的火；
-	// 粒子必须小：光晕叠光晕只会更糊，雾气感来自大而软的光斑；
-	// 密集小亮核叠在一起才读作「实体火焰」
-	back: { rate: 260, sizeMin: 5, sizeMax: 9, alpha: 0.36 },
-	// 前层：叠在不透明胶囊底上，黑底发光感的加色优势没了，靠亮度和密度撑住对比
-	front: { rate: 160, sizeMin: 5, sizeMax: 8, alpha: 0.46 },
+	// 火舌是本体，粒子已退化为飘出的余烼火星：小、稀、短命
+	back: { rate: 12, sizeMin: 3, sizeMax: 6, alpha: 0.36 },
+	front: { rate: 9, sizeMin: 3, sizeMax: 5, alpha: 0.46 },
 };
 
 // 焰色梯度：随寿命推进白热核→暗尾的 5 档。
@@ -24,6 +21,18 @@ const FLAME_VARS = ["--piko-flame-1", "--piko-flame-2", "--piko-flame-3", "--pik
 
 const SPRITE_SIZE = 64;
 let spriteCache: HTMLCanvasElement[] | null = null;
+// 壳 sprite：中心本档亮色、外围混向最暗档再淡出，单颗粒子即「中心亮、外面渐黑」
+let shellCache: HTMLCanvasElement[] | null = null;
+// 亮核相对壳的尺寸：只负责中心白热，不承担轮廓
+const CORE_SCALE = 0.7;
+// 主题火色（rgb 字符串）：火舌 path 填充用，与 sprite 同源同色；默认值是派生 ramp 的 fallback
+let paletteCache: string[] = [
+	"rgb(255,225,179)",
+	"rgb(255,193,121)",
+	"rgb(255,166,64)",
+	"rgb(232,96,38)",
+	"rgb(136,44,26)",
+];
 // 浅底主题（ningzhi/celadon）：白底上加色只会更白，front 层降级为正常覆盖
 let lightBackground = false;
 
@@ -64,7 +73,10 @@ export function refreshFlamePalette() {
 	const base = tokens.every(Boolean)
 		? (tokens as unknown as string[])
 		: deriveRamp(style.getPropertyValue("--piko-t3").trim() || "#ffa640");
-	spriteCache = buildSprites(base.map((s) => parseColor(s) ?? [255, 166, 64]));
+	const colors = base.map((s): [number, number, number] => parseColor(s) ?? [255, 166, 64]);
+	spriteCache = buildSprites(colors);
+	shellCache = buildShellSprites(colors);
+	paletteCache = colors.map(([r, g, b]) => `rgb(${r},${g},${b})`);
 	// 顺带判断胶囊底色深浅：相对亮度 > 0.6 视为浅底，决定 front 层混合模式
 	const s3 = parseColor(style.getPropertyValue("--piko-s3").trim());
 	lightBackground = !!s3 && (0.299 * s3[0] + 0.587 * s3[1] + 0.114 * s3[2]) / 255 > 0.6;
@@ -82,6 +94,36 @@ function buildSprites(colors: [number, number, number][]): HTMLCanvasElement[] {
 		grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
 		grad.addColorStop(0.3, `rgba(${r},${g},${b},0.5)`);
 		grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+		ctx.fillStyle = grad;
+		ctx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+		return c;
+	});
+}
+
+// 壳 sprite：中心本档亮色不透明 → 中段混向最暗档 → 最外淡出。
+// 与亮核 sprite 的分工：壳撑形体和暗边，亮核叠中心白热
+function buildShellSprites(colors: [number, number, number][]): HTMLCanvasElement[] {
+	const darkest = colors[colors.length - 1]!;
+	return colors.map(([r, g, b]) => {
+		const c = document.createElement("canvas");
+		c.width = SPRITE_SIZE;
+		c.height = SPRITE_SIZE;
+		const ctx = c.getContext("2d")!;
+		const half = SPRITE_SIZE / 2;
+		// 向最暗档混合，暗边保留主题色相
+		const mix = (m: number) =>
+			[
+				Math.round(r + (darkest[0] - r) * m),
+				Math.round(g + (darkest[1] - g) * m),
+				Math.round(b + (darkest[2] - b) * m),
+			] as const;
+		const mid = mix(0.7);
+		const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
+		grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
+		grad.addColorStop(0.32, `rgba(${r},${g},${b},1)`);
+		grad.addColorStop(0.62, `rgba(${mid[0]},${mid[1]},${mid[2]},0.9)`);
+		grad.addColorStop(0.85, `rgba(${darkest[0]},${darkest[1]},${darkest[2]},0.5)`);
+		grad.addColorStop(1, `rgba(${darkest[0]},${darkest[1]},${darkest[2]},0)`);
 		ctx.fillStyle = grad;
 		ctx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
 		return c;
@@ -164,6 +206,21 @@ type Particle = {
 	swayAmp: number;
 };
 
+// 驻留火舌：锚定在轮廓上的火根。常驻燃烧、只有摆动呼吸，不生不灭；
+// 模式切换时随旺度整体涨落，这才是「开启一次之后持续燃烧」的本体
+type Harm = { f: number; w: number; a: number; p: number };
+
+type Tongue = {
+	x: number;
+	y: number;
+	nx: number;
+	ny: number;
+	base: number; // 基础尺寸，最终直径 ≈ base × 1.8 × 旺度
+	phase: number;
+	// 和声参数组：每条火舌独立随机，频率不成整数比 → 波形永不重复，扭动才「飘忽」不机械
+	harm: Harm[];
+};
+
 export type FlameMode = "bottom" | "full" | "off";
 
 export type Flame = {
@@ -193,6 +250,30 @@ export function createFlame(
 	const ctx = canvas.getContext("2d")!;
 	// 胶囊是 rounded-full，半径取高度一半；上限 18 防御极端值
 	const outline = buildOutline(rect, Math.min(rect.height / 2, 18), 6);
+	// 沿轮廓均匀撒火舌锚点：间距即火苗疏密，均匀中带随机错落避免栅格感
+	const TONGUE_SPACING = 26;
+	const tongueCount = Math.max(3, Math.round(outline.total / TONGUE_SPACING));
+	const tongues: Tongue[] = Array.from({ length: tongueCount }, (_, i) => {
+		const pt = sampleOutline(outline, (i + Math.random()) / tongueCount);
+		return {
+			x: pt.x,
+			y: pt.y,
+			nx: pt.nx,
+			ny: pt.ny,
+			base: 9 + Math.random() * 5,
+			phase: Math.random() * Math.PI * 2,
+			// 4 层和声：空间频率沿链递增（尖端扭得更细碎），时间角速度正负交错避免同频摆
+			harm: Array.from({ length: 4 }, (_, k) => ({
+				f: 2.2 + Math.random() * 1.5 + k * 2.7,
+				w: (1.6 + Math.random() * 2.2) * (k % 2 ? 1 : -1),
+				a: 0.5 / (k + 1),
+				p: Math.random() * Math.PI * 2,
+			})),
+		};
+	});
+	// 阵风：所有火舌共享同一阵风，整片火焰同向倒伏又散开；风本身低频漂移，不是周期摆动
+	const windSeed = Math.random() * Math.PI * 2;
+	const wind = (ts: number) => Math.sin(ts * 0.6 + windSeed) * 0.7 + Math.sin(ts * 1.7 + windSeed * 2.3) * 0.3;
 	const particles: Particle[] = [];
 	const freelist: Particle[] = [];
 	let raf = 0;
@@ -225,8 +306,8 @@ export function createFlame(
 		// 底边法线朝下无意义，钳为 0，统一向上烧
 		p.vx = pt.nx * outward + (Math.random() - 0.5) * 10;
 		p.vy = Math.min(0, pt.ny * outward) - (13 + Math.random() * 15);
-		// 寿命缩短 + 发射率提高：粒子总数基本持平，但堆在火根，密度观感翻倍
-		p.maxLife = 0.36 + Math.random() * 0.26;
+		// 火星短命即可：只是从火舌上飘起的余烼
+		p.maxLife = 0.45 + Math.random() * 0.3;
 		p.life = p.maxLife;
 		p.size = (cfg.sizeMin + Math.random() * (cfg.sizeMax - cfg.sizeMin)) * intensityScale;
 		p.phase = Math.random() * Math.PI * 2;
@@ -248,12 +329,91 @@ export function createFlame(
 			if (mode !== "off") spawn();
 		}
 
-		// 每帧设模式：主题切换即时生效，无需重建 flame；
-		// lighter 加色是深底发光感的来源，浅底上退化成白看不见，改正常覆盖
-		ctx.globalCompositeOperation = layer === "front" && lightBackground ? "source-over" : "lighter";
-
 		ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
+		// 画火舌本体：真正的连续形状，不是珠子拼的——沿噪声中轴采样，
+		// 宽度从根到尖按 cos^0.7 平滑收窄，左右轮廓闭合成泪滴形 path 填渐变。
+		// 珠链法重叠不足就是一串可数的珠子（灯泡感），形体必须一次画整
+		const TONGUE_MAX_HEIGHT = 32; // 火苗最大高度（px），防长出可视区
+		const drawTongues = (ts: number, corePass: boolean) => {
+			const ia = Math.min(1, intensityScale);
+			const pal = paletteCache;
+			ctx.globalAlpha = Math.min(1, cfg.alpha * 1.5) * ia;
+			for (const tg of tongues) {
+				// bottom 模式只在底边烧，与火星采样同一判定
+				if (mode === "bottom" && tg.ny <= 0.2) continue;
+				const breathe = 0.8 + 0.3 * (0.6 * Math.sin(ts * 1.3 + tg.phase) + 0.4 * Math.sin(ts * 3.7 + tg.phase * 2.1));
+				const scale = intensityScale * breathe;
+				if (scale < 0.03) continue;
+				// 钳高度：旺度叠加呼吸后很容易长出可视区，火苗被截断只剩半截更难看
+				const height = Math.min(tg.base * 3.4 * scale, TONGUE_MAX_HEIGHT);
+				// 扭动 = 和声噪声（非整数频率比，波形永不重复），摆幅乘 s：根部锁死、尖端细扭
+				const wob = (s: number) => {
+					let v = 0;
+					for (const h of tg.harm) v += h.a * Math.sin(s * h.f + ts * h.w + h.p);
+					return v * height * 0.22 * s;
+				};
+				// 中轴：顶出法线起步 + 向上生长 + 阵风整条吹（根部不动、尖端 s² 倒伏）
+				const N = 10;
+				const axis: Array<[number, number]> = [];
+				for (let j = 0; j <= N; j++) {
+					const s = j / N;
+					axis.push([
+						tg.x + tg.nx * 2 + wob(s) + wind(ts) * height * 0.4 * s * s,
+						tg.y + tg.ny * 2 - s * height,
+					]);
+				}
+				// 半宽轮廓：根 ≈ base×0.95，尖端收 0；内芯收窄到 35%，白热区只留一线
+				const widthScale = corePass ? 0.35 : 1;
+				const half = (s: number) => tg.base * 0.95 * Math.pow(Math.cos((s * Math.PI) / 2), 0.7) * scale * widthScale;
+				// 轮廓点 = 轴点 + 切线法线 × 半宽
+				const edge = (j: number, side: number): [number, number] => {
+					const s = j / N;
+					const [x, y] = axis[j]!;
+					const k = j === N ? j - 1 : j;
+					const dx = axis[k + 1]![0] - axis[k]![0];
+					const dy = axis[k + 1]![1] - axis[k]![1];
+					const len = Math.hypot(dx, dy) || 1;
+					const w = half(s);
+					return [x - side * (dy / len) * w, y + side * (dx / len) * w];
+				};
+				ctx.beginPath();
+				for (let j = 0; j <= N; j++) {
+					// 左侧：根→尖
+					const [px, py] = edge(j, -1);
+					if (j === 0) ctx.moveTo(px, py);
+					else ctx.lineTo(px, py);
+				}
+				for (let j = N; j >= 0; j--) {
+					// 右侧：尖→根，闭合出连续泪滴
+					const [px, py] = edge(j, 1);
+					ctx.lineTo(px, py);
+				}
+				ctx.closePath();
+				// 渐变沿中轴：壳层中色→暗尾撑轮廓，内芯白热→中色撑「中心亮」
+				const [rx, ry] = axis[0]!;
+				const [tx, ty] = axis[N]!;
+				const g = ctx.createLinearGradient(rx, ry, tx, ty);
+				if (corePass) {
+					g.addColorStop(0, pal[0]!);
+					g.addColorStop(0.55, pal[1]!);
+					g.addColorStop(1, pal[2]!);
+				} else {
+					g.addColorStop(0, pal[1]!);
+					g.addColorStop(0.5, pal[2]!);
+					g.addColorStop(1, pal[4]!);
+				}
+				ctx.fillStyle = g;
+				ctx.fill();
+			}
+		};
+		const ts = t / 1000;
+
+		// 两遍绘制：先画壳再点亮核。壳中心是不透明亮色，能盖住别的火苗的暗边，
+		// 密集区堆出实心火团、外围自然渐黑。
+		// 第一遍（火舌壳 + 物理更新 + 火星壳）必须走 source-over：lighter 下画暗色等于没画
+		ctx.globalCompositeOperation = "source-over";
+		drawTongues(ts, false);
 		for (let i = particles.length - 1; i >= 0; i--) {
 			const p = particles[i]!;
 			p.life -= dt;
@@ -271,10 +431,24 @@ export function createFlame(
 
 			const age01 = 1 - p.life / p.maxLife;
 			const idx = Math.min(FLAME_VARS.length - 1, Math.floor(age01 * FLAME_VARS.length));
-			// 火舌随寿命收缩 + 纵向拉伸，出生快速淡入、死亡线性淡出
 			const h = p.size * (0.5 + 1.0 * (p.life / p.maxLife));
+			const fade = (p.life / p.maxLife) ** 1.2;
 			const dw = h * 0.95;
 			const dh = h * 1.8;
+			ctx.globalAlpha = cfg.alpha * Math.min(1, Math.sqrt(intensityScale)) * Math.min(1, age01 * 10) * fade;
+			ctx.drawImage(shellCache![idx]!, p.x - dw / 2, p.y - dh / 2, dw, dh);
+		}
+
+		// 第二遍亮核（比壳小，只叠中心）：lighter 加色是深底发光感的来源，浅底上退化成白看不见，改正常覆盖
+		ctx.globalCompositeOperation = layer === "front" && lightBackground ? "source-over" : "lighter";
+		drawTongues(ts, true);
+		for (const p of particles) {
+			const age01 = 1 - p.life / p.maxLife;
+			const idx = Math.min(FLAME_VARS.length - 1, Math.floor(age01 * FLAME_VARS.length));
+			// 火舌随寿命收缩 + 纵向拉伸，出生快速淡入、死亡线性淡出
+			const h = p.size * (0.5 + 1.0 * (p.life / p.maxLife));
+			const dw = h * 0.95 * CORE_SCALE;
+			const dh = h * 1.8 * CORE_SCALE;
 			// 幂次衰减替代线性：火根（寿命前期）保持高亮，火梢快速熄灭，根浓梢淡
 			// 指数只到 1.2：再高平均亮度掉太快，火焰会整体变暗
 			const fade = (p.life / p.maxLife) ** 1.2;
@@ -283,8 +457,8 @@ export function createFlame(
 		}
 		ctx.globalAlpha = 1;
 
-		// 烧尽逻辑：停发射后存量粒子烧完才停帧，避免画面僵住
-		const burnedOut = mode === "off" && particles.length === 0;
+		// 烧尽逻辑：火舌随旺度缩没 + 存量火星烧完才停帧，避免画面僵住
+		const burnedOut = mode === "off" && particles.length === 0 && intensityScale < 0.03;
 		if (!burnedOut) raf = requestAnimationFrame(step);
 		else running = false;
 	};
