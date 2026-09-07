@@ -3,8 +3,8 @@
 A capsule for pi code agent — a floating, always-on-top window that shows agent status (idle / thinking / working) at a glance. Compatible with Claude Code.
 
 
+<img width="318" height="118" alt="image" src="https://github.com/user-attachments/assets/1c3c7f6c-07d8-428a-9706-4e555967019f" />
 
-https://github.com/user-attachments/assets/dd214a4e-adda-42bf-917f-47060304ea77
 
 
 
