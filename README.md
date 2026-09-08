@@ -4,6 +4,8 @@ A capsule for pi code agent — a floating, always-on-top window that shows agen
 
 
 <img width="318" height="118" alt="image" src="https://github.com/user-attachments/assets/1c3c7f6c-07d8-428a-9706-4e555967019f" />
+<img width="377" height="153" alt="image" src="https://github.com/user-attachments/assets/12932162-b684-490b-b10f-2e092569e6b9" />
+
 
 
 
