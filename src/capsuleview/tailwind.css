@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* FlameWrap 的输出画布向四周外扩几十 px（火焰辉光区），会撑大 document 滚动区弹
+ * 出滚动条、反过来遮挡侧边火焰。窗口是固定尺寸 GUI，直接禁掉文档滚动 */
+html,
+body {
+	overflow: hidden;
+}
+
 /* ============================================================
  * 主题 token — [data-theme] 挂在 <html> 上
  * 每主题完整定义：

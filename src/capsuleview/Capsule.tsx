@@ -1,8 +1,8 @@
 import { Electroview } from "electrobun/view";
 import { Minus } from "lucide-react";
 import type { CapsuleRPCSchema, EventForUpdate } from "../shared/rpc-schema";
-import { useEffect, useRef, useState } from "react";
-import { createFlame, refreshFlamePalette, type Flame, type FlameMode } from "./flame";
+import { useEffect, useState } from "react";
+import { FlameWrap, type FlameWrapOptions } from "./FlameWrap";
 const rpc = Electroview.defineRPC<CapsuleRPCSchema>({
 	handlers: {
 		requests: {
@@ -133,9 +133,35 @@ const labelByStatus = {
 	working: "Working",
 } as const
 
+// 主题火色：--piko-flame-3（缺省 --piko-t3）转 shader 的 0-1 rgb
+function readFlameColor(): [number, number, number] {
+	const style = getComputedStyle(document.documentElement);
+	const raw = style.getPropertyValue("--piko-flame-3").trim() || style.getPropertyValue("--piko-t3").trim() || "#ffa640";
+	const hex = raw.replace("#", "");
+	if (/^[0-9a-fA-F]{6}$/.test(hex)) {
+		return [
+			parseInt(hex.slice(0, 2), 16) / 255,
+			parseInt(hex.slice(2, 4), 16) / 255,
+			parseInt(hex.slice(4, 6), 16) / 255,
+		];
+	}
+	return [1, 0.65, 0.25];
+}
+
+// 火焰参数档位：同一团火，状态即燃烧程度。
+// height 同时是 shader 噪声场的尺度单位（demo 用 170），宁大勿小——压太小火舌会碎成渣。
+// rim（侧/底光晕）刻意压低：胶囊距窗口左右只有 ~8px，光晕 reach 至少 8px（shader 下限），
+// 亮了会被窗口边缘硬切出一道贴边竖条
+const FLAME_BY_STATUS = {
+	idle: { intensity: 0, height: 30, sparks: 0, smoke: 0, rim: 0 },
+	thinking: { intensity: 0.45, height: 68, sparks: 0.6, smoke: 0.7, rim: 1 },
+	working: { intensity: 0.55, height: 96, sparks: 1.5, smoke: 1.5, rim: 1.2 },
+} as const satisfies Record<EventForUpdate["status"], FlameWrapOptions>;
+
 export default function Capsule() {
 	const [eventForUpdate,setEventForUpdate] = useState<EventForUpdate>({status:"idle",name: "Piko"})
 	const [modelVisible,setModelVisible] = useState(true)
+	const [flameColor, setFlameColor] = useState(readFlameColor)
 	useEffect(()=>{
 		rpc.addMessageListener("update",event =>{
 			setEventForUpdate(event)
@@ -145,35 +171,10 @@ export default function Capsule() {
 		})
 		rpc.addMessageListener("theme",theme=>{
 			document.documentElement.dataset.theme = theme
-			// dataset 赋值是同步生效的，可以立刻重读色板
-			refreshFlamePalette()
+			// dataset 换主题后样式重算未必同步完成，隔帧重读火色保证拿到新主题的色
+			requestAnimationFrame(()=>setFlameColor(readFlameColor()))
 		})
 	},[])
-
-	// 火焰状态机：idle=熄火、thinking=顶边小火、working=全轮廓旺火
-	// 状态映射进 useEffect 依赖，状态变化只调 setMode，引擎自己处理过渡
-	const pillRef = useRef<HTMLDivElement>(null);
-	const backCanvasRef = useRef<HTMLCanvasElement>(null);
-	const frontCanvasRef = useRef<HTMLCanvasElement>(null);
-	const flamesRef = useRef<Flame[]>([]);
-	useEffect(() => {
-		const pill = pillRef.current;
-		const back = backCanvasRef.current;
-		const front = frontCanvasRef.current;
-		if (!pill || !back || !front) return;
-		refreshFlamePalette();
-		const rect = pill.getBoundingClientRect();
-		flamesRef.current = [createFlame(back, rect, "back"), createFlame(front, rect, "front")];
-		return () => {
-			for (const f of flamesRef.current) f.destroy();
-			flamesRef.current = [];
-		};
-	}, [])
-	useEffect(() => {
-		const flameMode: FlameMode =
-			eventForUpdate.status === "working" ? "full" : eventForUpdate.status === "thinking" ? "bottom" : "off";
-		for (const f of flamesRef.current) f.setMode(flameMode);
-	}, [eventForUpdate.status])
 
 	const hide = () => {
 		rpc.send.hide();
@@ -181,13 +182,23 @@ export default function Capsule() {
 
 	return (
 		<div className="electrobun-webkit-app-region-drag relative flex h-full w-full items-center justify-center bg-transparent p-2">
-			<canvas ref={backCanvasRef} className="pointer-events-none absolute inset-0 z-[1] h-full w-full" />
-			<canvas ref={frontCanvasRef} className="pointer-events-none absolute inset-0 z-[4] h-full w-full" />
 			<div className="relative z-[3] w-full max-w-70 translate-y-2">
 				<div className="absolute bottom-0 left-0 z-10">
 					<CapsuleStatusIcon event={eventForUpdate} />
 				</div>
-				<div ref={pillRef} className={`relative flex items-center overflow-hidden rounded-full border pl-13 pr-3 py-1 transition-colors duration-300 piko-bg`}>
+				<FlameWrap
+					className="w-full"
+					color={flameColor}
+					radius={20}
+					speed={0.25}
+					scale={0.75}
+					turbulence={0.5}
+					turbulenceScale={0.5}
+					melt={4.5}
+					sparkSize={0.35}
+					{...FLAME_BY_STATUS[eventForUpdate.status]}
+				>
+				<div className="relative flex items-center overflow-hidden rounded-full border pl-13 pr-3 py-1 transition-colors duration-300 piko-bg">
 					<div className="relative min-w-0 flex-1">
 						<div className="flex items-center gap-2">
 							<span className="piko-ink truncate text-sm font-semibold tracking-tight">{eventForUpdate.name}</span>
@@ -209,6 +220,7 @@ export default function Capsule() {
 						</button>
 					</div>
 				</div>
+				</FlameWrap>
 				<p className={`
 					absolute -top-7.5 right-2 rounded-full px-3 py-1.5 scale-75 origin-[right_center]
 					piko-ink text-sm piko-bg ${modelVisible ? "" : "hidden"}
