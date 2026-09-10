@@ -292,7 +292,9 @@ void main () {
   e *= mix(0.45, 1.0, wTop) * max(emis, 0.001);
 
   vec3 hot = mix(uColor, vec3(1.0), 0.35);
-  vec3 deep = mix(uColor, uColor * uColor, 0.5) * 0.9;
+  // piko 适配：uColor 是主题强调色，浅色主题偏深，原版 uColor*uColor 的暗尾会烧成黑火；
+  // 暗尾只轻微压暗，保持火焰整体就是主题原色
+  vec3 deep = mix(uColor, uColor * uColor, 0.22) * 0.96;
   float ramp = 1.0 - exp(-e * 2.4);
   vec3 fireCol = mix(deep, uColor, S(0.0, 0.55, ramp));
   float core = ramp * (0.45 + 0.55 * exp(-g * 2.2)) * (0.5 + 0.5 * n);

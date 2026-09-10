@@ -1,6 +1,7 @@
 import { Electroview } from "electrobun/view";
 import { Minus } from "lucide-react";
 import type { CapsuleRPCSchema, EventForUpdate } from "../shared/rpc-schema";
+import type { ThemeName } from "../shared/themes";
 import { useEffect, useState } from "react";
 import { FlameWrap, type FlameWrapOptions } from "./FlameWrap";
 const rpc = Electroview.defineRPC<CapsuleRPCSchema>({
@@ -133,20 +134,17 @@ const labelByStatus = {
 	working: "Working",
 } as const
 
-// 主题火色：--piko-flame-3（缺省 --piko-t3）转 shader 的 0-1 rgb
-function readFlameColor(): [number, number, number] {
-	const style = getComputedStyle(document.documentElement);
-	const raw = style.getPropertyValue("--piko-flame-3").trim() || style.getPropertyValue("--piko-t3").trim() || "#ffa640";
-	const hex = raw.replace("#", "");
-	if (/^[0-9a-fA-F]{6}$/.test(hex)) {
-		return [
-			parseInt(hex.slice(0, 2), 16) / 255,
-			parseInt(hex.slice(2, 4), 16) / 255,
-			parseInt(hex.slice(4, 6), 16) / 255,
-		];
-	}
-	return [1, 0.65, 0.25];
-}
+// 每主题火焰色（0-1 rgb）：胶囊底色 --piko-s3 同色相的「点燃亮版」——同色相提亮提饱和，
+// 视觉上是胶囊底色烧起来了，与胶囊一体；浅底主题（玉奁冰/凝脂白）底色无彩或过浅烧不出形，
+// 借强调色 t3 的色相提亮。JS 直查表顺带消除 CSS 变量重算的时序问题
+const FLAME_COLOR: Record<ThemeName, [number, number, number]> = {
+	blue: [0x5b / 255, 0x8f / 255, 0xe6 / 255],
+	dark: [0x8f / 255, 0x9a / 255, 0xe8 / 255],
+	celadon: [0x4f / 255, 0xae / 255, 0x8b / 255],
+	red: [0xef / 255, 0x6a / 255, 0x4a / 255],
+	qi: [0x9a / 255, 0x7b / 255, 0xf0 / 255],
+	ningzhi: [0x5d / 255, 0x84 / 255, 0xc2 / 255],
+};
 
 // 火焰参数档位：同一团火，状态即燃烧程度。
 // height 同时是 shader 噪声场的尺度单位（demo 用 170），宁大勿小——压太小火舌会碎成渣。
@@ -161,7 +159,8 @@ const FLAME_BY_STATUS = {
 export default function Capsule() {
 	const [eventForUpdate,setEventForUpdate] = useState<EventForUpdate>({status:"idle",name: "Piko"})
 	const [modelVisible,setModelVisible] = useState(true)
-	const [flameColor, setFlameColor] = useState(readFlameColor)
+	const [theme, setTheme] = useState<ThemeName>("blue")
+	const flameColor = FLAME_COLOR[theme]
 	useEffect(()=>{
 		rpc.addMessageListener("update",event =>{
 			setEventForUpdate(event)
@@ -169,10 +168,9 @@ export default function Capsule() {
 		rpc.addMessageListener("toogleModel",visible=>{
 			setModelVisible(visible)
 		})
-		rpc.addMessageListener("theme",theme=>{
-			document.documentElement.dataset.theme = theme
-			// dataset 换主题后样式重算未必同步完成，隔帧重读火色保证拿到新主题的色
-			requestAnimationFrame(()=>setFlameColor(readFlameColor()))
+		rpc.addMessageListener("theme",next=>{
+			document.documentElement.dataset.theme = next
+			setTheme(next)
 		})
 	},[])
 
